@@ -6,13 +6,12 @@ import           Database.PostgreSQL.Simple
 import           Debug.Trace
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Logger         (ApacheLogger, withStdoutLogger)
-
-port :: Int
-port = 8181
+import           System.Environment
 
 main :: IO ()
 main =
   withStdoutLogger $ \aplogger -> do
+    port <- read <$> getEnv "PORT"
     let settings =
           setLogger aplogger .
           setPort port .
