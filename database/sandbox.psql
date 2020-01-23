@@ -1,0 +1,1 @@
+INSERT INTO characters (name, description) VALUES ('hej', 'hej')
