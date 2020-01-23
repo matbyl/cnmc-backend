@@ -12,6 +12,7 @@ main :: IO ()
 main =
   withStdoutLogger $ \aplogger -> do
     port <- read <$> getEnv "PORT"
+    d
     let settings =
           setLogger aplogger .
           setPort port .
@@ -24,11 +25,6 @@ main =
                 putStrLn
                   "--------------------------------------------------------"
                 putStrLn "")
-    conn <- connect ConnectInfo
-        { connectHost = "localhost"
-        , connectPort = 5432
-        , connectDatabase = "cnmc"
-        , connectPassword = "changeme"
-        , connectUser = "postgres"
-        }
+    connectionString <- read <$> getEnv "DATABASE_URL"
+    conn <- connectPostgreSQL connectionString
     runSettings (settings defaultSettings) (app conn)
