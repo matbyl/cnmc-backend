@@ -12,7 +12,6 @@ main :: IO ()
 main =
   withStdoutLogger $ \aplogger -> do
     port <- read <$> getEnv "PORT"
-    d
     let settings =
           setLogger aplogger .
           setPort port .
