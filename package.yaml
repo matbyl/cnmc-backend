@@ -58,6 +58,12 @@ dependencies:
   - polysemy
   - polysemy-plugin
   - uuid
+  - network-uri
+  - hspec
+  - extra
+  - HUnit
+  - containers
+
 library:
   source-dirs: src
 
