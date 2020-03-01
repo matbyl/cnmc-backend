@@ -23,6 +23,7 @@ default-extensions:
   - OverloadedStrings
   - DataKinds
   - TypeOperators
+  - DeriveAnyClass
   - DeriveGeneric
   - DataKinds
   - FlexibleContexts
@@ -63,6 +64,11 @@ dependencies:
   - extra
   - HUnit
   - containers
+  - envy
+  - req
+  - http-client
+  - http-client-tls
+  - bytestring
 
 library:
   source-dirs: src

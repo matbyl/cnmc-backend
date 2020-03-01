@@ -1,6 +1,6 @@
 {-# LANGUAGE Arrows #-}
 
-module Character (listCharacters, addCharacter, Character, CharacterForm) where
+module Character (listCharacters, addCharacter, Character, CharacterForm, getCharacter, CharacterEff, runCharacterEff) where
 
 import           Control.Arrow
 import           Control.Monad
@@ -11,7 +11,11 @@ import           Data.UUID
 import           Database.PostgreSQL.Simple
 import           GHC.Generics
 import           Opaleye
-
+import qualified Polysemy                      as P
+import qualified Polysemy.Input                      as PI
+import  Polysemy (interpret, Sem, Members, )
+import Polysemy.Embed (Embed, embed)
+import GHC.Int (Int64)
 data CharacterForm =
   CharacterForm
   { characterFormName        :: String
@@ -20,6 +24,7 @@ data CharacterForm =
   deriving (Generic, Show)
 
 instance FromJSON CharacterForm
+
 
 data Character =
   Character
@@ -31,9 +36,33 @@ data Character =
 
 instance ToJSON Character
 
+
+data CharacterEff m a where
+  AddCharacter :: CharacterForm -> CharacterEff m Character
+  GetCharacter :: UUID -> CharacterEff m Character
+  ListCharacters :: CharacterEff m [Character]
+
+
+P.makeSem ''CharacterEff
+
+runCharacterEff :: (Members [Embed IO, PI.Input Connection] r) => Sem ( CharacterEff : r) a -> Sem r a
+runCharacterEff = interpret $ \case
+          AddCharacter form -> do
+            conn <- PI.input 
+            embed $ addCharacterToPSQL conn form
+          GetCharacter id -> do
+            conn <- PI.input
+            embed $ getCharacterFromPSQL conn id
+          ListCharacters -> do
+            conn <- PI.input
+            embed $ listCharactersFromPSQL conn
+          
+      
+
+type CharacterTable = Table (Maybe (Column PGUuid), Column PGText, Column PGText) (Column PGUuid, Column PGText, Column PGText)
+
 characterTable ::
-     Table (Maybe (Column PGUuid), Column PGText, Column PGText) -- read type
-      (Column PGUuid, Column PGText, Column PGText) -- write type
+      CharacterTable
 characterTable =
   Table
     "characters"
@@ -42,35 +71,37 @@ characterTable =
 selectAllRows :: Connection -> IO [(UUID, String, String)]
 selectAllRows conn = runQuery conn $ queryTable characterTable
 
-addCharacter :: Connection -> CharacterForm -> IO ()
-addCharacter conn (CharacterForm name desc) = do
-  runInsertMany conn characterTable $ [toFields (uuid, name, desc)]
-  return ()
+addCharacterToPSQL :: Connection -> CharacterForm -> IO Character
+addCharacterToPSQL conn (CharacterForm name desc) =
+  (character . head) <$> runInsert_ conn (Insert characterTable [toFields (uuid, name, desc)] (rReturning (\(id, name, desc) -> (id,name,desc))) Nothing)
   where
       uuid :: Maybe UUID
       uuid = Nothing
 
 
-selectById :: Connection -> UUID -> IO [(UUID, String, String)]
-selectById conn key =
-  runQuery conn $
+selectCharacterByIdFromPSQL :: Connection -> UUID -> IO [(UUID, String, String)]
+selectCharacterByIdFromPSQL conn key =  runSelect conn $
   proc () ->
   do row@(id, _, _) <- queryTable characterTable -< ()
      restrict -< (id .== constant key)
      returnA -< row
 
-listCharacters :: Connection -> IO [Character]
-listCharacters conn = do
-  rows <- selectAllRows conn
-  return $ map (\(id, name, desc) -> Character id name desc) rows
+getCharacterFromPSQL :: Connection -> UUID -> IO Character
+getCharacterFromPSQL conn id = (character . head) <$> selectCharacterByIdFromPSQL conn id
 
+character :: (UUID, String, String) -> Character
+character (id, name, desc) = Character id name desc
+
+listCharactersFromPSQL :: Connection -> IO [Character]
+listCharactersFromPSQL conn =  map character <$> selectAllRows conn
+  
 updateRow :: Connection -> (Maybe UUID, String, String) -> IO ()
 updateRow conn row@(key, name, email) = do
   runUpdate
     conn
     characterTable
-    (\_ -> constant row) -- what should the matching row be updated to
+    (\_ -> constant row)
     (\(k, _, _) -> case key of
         Just key' -> k .== constant key'
-        Nothing   -> pgBool False ) -- which rows to update?
+        Nothing   -> pgBool False )
   return ()

@@ -1,1 +1,1 @@
-INSERT INTO characters (name, description) VALUES ('hej', 'hej')
+CREATE TABLE cnmc

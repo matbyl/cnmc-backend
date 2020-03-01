@@ -8,26 +8,31 @@ import           Network.Wai.Handler.Warp
 import           Network.Wai.Logger             ( ApacheLogger
                                                 , withStdoutLogger
                                                 )
-import           System.Environment
 import           Heroku
+import           Control.Exception
 import qualified Data.Map.Strict               as Map
 import           Data.Maybe
 import           Text.Read
+import           Config
+
+
 main :: IO ()
 main = withStdoutLogger $ \aplogger -> do
-  port <- read <$> getEnv "PORT"
+  envConfig <- getEnvironment
   let
-    settings = setLogger aplogger . setPort port . setBeforeMainLoop
-      (do
-        putStrLn ""
-        putStrLn "--------------------------------------------------------"
-        putStrLn $ "\t Running CNMC-DB on: http://localhost:" ++ show port
-        putStrLn "--------------------------------------------------------"
-        putStrLn ""
-      )
-  params <- dbConnParams
+    settings =
+      setLogger aplogger . setPort (appPort envConfig) . setBeforeMainLoop
+        (do
+          putStrLn ""
+          putStrLn "--------------------------------------------------------"
+          putStrLn $ "\t Running CNMC-DB on: http://localhost:" ++ show
+            (appPort envConfig)
+          putStrLn "--------------------------------------------------------"
+          putStrLn ""
+        )
+  let params = parseDatabaseUrl (pgDatabaseUrl envConfig)
 
-  conn   <- connect ConnectInfo
+  conn <- connect ConnectInfo
     { connectHost     = fromMaybe "localhost" $ Map.lookup "host" params
     , connectPort     = maybe 5432 read $ Map.lookup "port" params
     , connectDatabase = fromMaybe "localhost" $ Map.lookup "dbname" params
