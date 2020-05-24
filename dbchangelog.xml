@@ -1,0 +1,148 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no" ?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    <changeSet author="mathias (generated)" id="1587236353440-1">
+        <createTable tableName="characters">
+            <column defaultValueComputed="gen_random_uuid()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="characters_pkey" />
+            </column>
+            <column name="name" type="VARCHAR(50)" />
+            <column name="description" type="TEXT" />
+        </createTable>
+    </changeSet>
+    <changeSet author="mathias (generated)" id="1587236353440-2">
+        <createTable tableName="users">
+            <column autoIncrement="true" name="id" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="users_pkey" />
+            </column>
+            <column name="name" type="TEXT">
+                <constraints nullable="false" />
+            </column>
+            <column name="email" type="TEXT">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="44" author="mathias">
+        <addColumn tableName="characters">
+            <column name="firstname" type="VARCHAR(50)" />
+            <column name="lastname" type="VARCHAR(50)" />
+            <column name="birthday" type="DATE" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="45" author="mathias">
+        <createTable tableName="actors">
+            <column name="firstname" type="VARCHAR(50)" />
+            <column name="lastname" type="VARCHAR(50)" />
+            <column name="birthday" type="DATE" />
+        </createTable>
+    </changeSet>
+
+    <changeSet id="46" author="mathias">
+        <createTable tableName="work">
+            <column name="name" type="VARCHAR(50)" />
+            <column name="produced" type="DATE" />
+            <column name="genre" type="genre" />
+            <column name="medium" type="medium" />
+        </createTable>
+    </changeSet>
+
+    <changeSet id="47" author="mathias">
+        <renameColumn tableName="work" oldColumnName="produced" newColumnName="released" />
+    </changeSet>
+
+    <changeSet id="48" author="mathias">
+        <createTable tableName="countries">
+            <column name="id" type="VARCHAR(64)" />
+            <column name="value" type="VARCHAR(64)" />
+        </createTable>
+    </changeSet>
+
+    <changeSet id="49" author="mathias">
+        <createTable tableName="productionCompanies">
+            <column defaultValueComputed="gen_random_uuid()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="productionCompanies_pkey" />
+            </column>
+            <column name="name" type="TEXT">
+                <constraints nullable="false" />
+            </column>
+            <column name="description" type="TEXT">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+
+
+    <changeSet id="50" author="mathias">
+        <addColumn tableName="productionCompanies">
+            <column name="country" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="productionCompanies_pkey" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="51" author="mathias">
+        <dropColumn tableName="productionCompanies" columnName="country" />
+        <addPrimaryKey tableName="countries" columnNames="id" constraintName="countries_pkey" />
+        <addColumn tableName="productionCompanies">
+            <column name="country" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="countries_pkey" />
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="52" author="mathias">
+        <dropColumn tableName="productionCompanies" columnName="country" />
+        <addColumn tableName="productionCompanies">
+            <column name="country" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="countries_fkey" references="countries(id)" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="53" author="mathias">
+        <addColumn tableName="work">
+            <column defaultValueComputed="gen_random_uuid()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="work_pkey" />
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="characters" baseColumnNames="id" constraintName="work_fkey" referencedTableName="work" referencedColumnNames="id" />
+    </changeSet>
+
+    <changeSet id="54" author="mathias">
+        <dropForeignKeyConstraint baseTableName="characters" constraintName="work_fkey" />
+        <addColumn tableName="characters">
+            <column name="work_id" type="UUID" />
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="characters" baseColumnNames="work_id" constraintName="work_fkey" referencedTableName="work" referencedColumnNames="id" />
+    </changeSet>
+
+    <changeSet id="55" author="mathias">
+        <dropColumn tableName="characters" columnName="work_id"></dropColumn>
+        <createTable tableName="character_work">
+            <column name="character_id" type="UUID">
+                <constraints nullable="false" references="characters(id)" foreignKeyName="character_fkey" />
+            </column>
+            <column name="work_id" type="UUID">
+                <constraints nullable="false" references="work(id)" foreignKeyName="work_fkey" />
+            </column>
+        </createTable>
+    </changeSet>
+
+
+    <changeSet id="56" author="mathias">
+        <addColumn tableName="actors">
+            <column defaultValueComputed="gen_random_uuid()" name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="actor_pkey" />
+            </column>
+        </addColumn>
+        <createTable tableName="character_actor">
+            <column name="character_id" type="UUID">
+                <constraints nullable="false" references="characters(id)" foreignKeyName="character_fkey" />
+            </column>
+            <column name="work_id" type="UUID">
+                <constraints nullable="false" references="actors(id)" foreignKeyName="actor_fkey" />
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

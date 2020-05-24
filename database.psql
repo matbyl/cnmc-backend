@@ -1,0 +1,13 @@
+CREATE EXTENSION pgcrypto;
+
+CREATE TABLE characters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50),
+    description TEXT
+);
+
+CREATE TABLE users(
+   id serial PRIMARY KEY
+  ,name TEXT NOT NULL
+  ,email TEXT NOT NULL
+);

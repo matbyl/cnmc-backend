@@ -16,7 +16,7 @@ data PGConfig = PGConfig {
 
 instance DefConfig PGConfig where
   defConfig = PGConfig
-    { pgDatabaseUrl = "postgres://postgres:changeme@localhost:5432/cnmc"
+    { pgDatabaseUrl = "postgres://postgres:postgres@localhost:8321/cnmc"
     , appPort       = 4242
     }
 
