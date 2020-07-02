@@ -1,13 +1,13 @@
 
 {-# LANGUAGE Arrows #-}
 
-module DAL.Character (getCharacterFromDB, addCharacterToDB, listCharactersFromDB) where
+module DAL.Character (getCharacterFromDB, addCharacterToDB, listCharactersFromDB, addCharactersToDB) where
 
 import Control.Arrow
 import Control.Monad
 import Data.Aeson
 import Data.Coerce
-import Data.Profunctor.Product (p5)
+import Data.Profunctor.Product (p2)
 import Data.Time
 import Data.UUID
 import Database.PostgreSQL.Simple
@@ -21,18 +21,12 @@ type CharacterTable = Table WriteField ReadField
 
 type WriteField =
   ( Maybe (Column PGUuid),
-    Column PGText,
-    Column PGText,
-    Column PGText,
-    Column PGTimestamptz
+    Column PGText
   )
 
 type ReadField =
   ( Column PGUuid,
-    Column PGText,
-    Column PGText,
-    Column PGText,
-    Column PGTimestamptz
+    Column PGText
   )
 
 characterTable ::
@@ -40,26 +34,38 @@ characterTable ::
 characterTable =
   Table
     "characters"
-    ( p5
+    ( p2
         ( optional "id",
-          required "description",
-          required "firstname",
-          required "lastname",
-          required "birthday"
+          required "name"
         )
     )
 
-selectAllRows :: Connection -> IO [(UUID, String, String, String, UTCTime)]
+selectAllRows :: Connection -> IO [(UUID, String)]
 selectAllRows conn = runQuery conn $ queryTable characterTable
 
 addCharacterToDB :: Connection -> CharacterForm -> IO Character
-addCharacterToDB conn (CharacterForm firstname lastname birthday desc) =
+addCharacterToDB conn (CharacterForm name) =
   (character . head)
     <$> runInsert_
       conn
       ( Insert
           characterTable
-          [toFields (uuid, desc, firstname, lastname, birthday)]
+          [toFields (uuid, name)]
+          (rReturning id)
+          Nothing
+      )
+  where
+    uuid :: Maybe UUID
+    uuid = Nothing
+
+addCharactersToDB :: Connection -> [CharacterForm] -> IO [Character]
+addCharactersToDB conn characters =
+    map character
+    <$> runInsert_
+      conn
+      ( Insert
+          characterTable
+          ((\(CharacterForm name) -> toFields (uuid, name)) <$> characters)
           (rReturning id)
           Nothing
       )
@@ -70,29 +76,29 @@ addCharacterToDB conn (CharacterForm firstname lastname birthday desc) =
 selectCharacterByIdFromPSQL ::
   Connection ->
   UUID ->
-  IO [(UUID, String, String, String, UTCTime)]
+  IO [(UUID,  String)]
 selectCharacterByIdFromPSQL conn key = runSelect conn $
   proc () -> do
-    row@(id, _, _, _, _) <- queryTable characterTable -< ()
+    row@(id, _) <- queryTable characterTable -< ()
     restrict -< (id .== constant key)
     returnA -< row
 
 getCharacterFromDB :: Connection -> UUID -> IO Character
 getCharacterFromDB conn id = (character . head) <$> selectCharacterByIdFromPSQL conn id
 
-character :: (UUID, String, String, String, UTCTime) -> Character
-character (id, desc, firstname, lastname, birthday) = Character id desc firstname lastname birthday
+character :: (UUID, String) -> Character
+character (id, name) = Character id name
 
 listCharactersFromDB :: Connection -> IO [Character]
 listCharactersFromDB conn = map character <$> selectAllRows conn
 
-updateRow :: Connection -> (Maybe UUID, String, String, String, UTCTime) -> IO ()
-updateRow conn row@(key, desc, firstname, lastname, birthday) = do
+updateRow :: Connection -> (Maybe UUID, String) -> IO ()
+updateRow conn row@(key, name) = do
   runUpdate
     conn
     characterTable
     (\_ -> constant row)
-    ( \(k, _, _, _, _) -> case key of
+    ( \(k, _) -> case key of
         Just key' -> k .== constant key'
         Nothing -> pgBool False
     )

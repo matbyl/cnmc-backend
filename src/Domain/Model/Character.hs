@@ -7,10 +7,7 @@ import           GHC.Generics
 import           Data.Swagger                   ( ToSchema )
 
 data CharacterForm = CharacterForm
-  { characterFormFirstname :: String,
-    characterFormLastname :: String,
-    characterFormBirthday :: UTCTime,
-    characterFormDescription :: String
+  { characterFormName :: String
   }
   deriving (Generic, Show, ToSchema)
 
@@ -18,10 +15,7 @@ instance FromJSON CharacterForm
 
 data Character = Character
   { characterId :: UUID,
-    characterDescription :: String,
-    characterFirstname :: String,
-    characterLastname :: String,
-    characterBirthday :: UTCTime
+    characterName :: String
   }
   deriving (Generic, Show, ToSchema)
 

@@ -20,24 +20,43 @@ import           Data.Swagger
 
 import           Control.Lens
 import           Data.Aeson.Encode.Pretty       ( encodePretty )
+--
+-- Actors
+--
+type AddActor = "actors" :> ReqBody '[JSON] ActorForm :> Post '[JSON] Actor
 
+type GetActor = "actors" :> Capture "id" UUID :> Get '[JSON] Actor
+
+type ListActors = "actors" :> Get '[JSON] [Actor]
+
+--
+-- Characters
+--
 type GetCharacter = "characters" :> Capture "id" UUID :> Get '[JSON] Character
-type ListCharacters = "characters" :> Get '[JSON] [Character]
-type AddCharacter
-  = "characters" :> ReqBody '[ JSON] CharacterForm :> Post '[JSON] Character
 
+type ListCharacters = "characters" :> Get '[JSON] [Character]
+
+type AddCharacter
+  = "characters" :> ReqBody '[JSON] [CharacterForm] :> Post '[JSON] [Character]
+--
+-- Countries
+--
 type ListCountries = "countries" :> Get '[JSON] [Country]
 
+--
+-- Work
+--
 type AddWork = "work" :> ReqBody '[JSON] WorkForm :> Post '[JSON] Work
 
 type ListWork = "work" :> Get '[JSON] [Work]
+
 
 type ListMedium = "medium" :> Get '[JSON] [Medium]
 
 type ListGenre = "genre" :> Get '[JSON] [Genre]
 
 type CNMCAPI
-  = ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries :<|> AddWork :<|> ListWork :<|> ListMedium :<|> ListGenre
+  = AddActor :<|> GetActor :<|> ListActors :<|> ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries :<|> AddWork :<|> ListWork :<|> ListMedium :<|> ListGenre
 
 type SwaggerAPI = "swagger.json" :> Get '[JSON] Swagger
 
@@ -46,6 +65,9 @@ type API = SwaggerAPI :<|> CNMCAPI
 server :: Connection -> Server API
 server conn =
   (return cnmcSwagger)
+    :<|> addActorH
+    :<|> getActorH
+    :<|> listActorsH
     :<|> listCharactersH
     :<|> addCharacterH
     :<|> getCharacterH
@@ -55,9 +77,12 @@ server conn =
     :<|> listMediumH
     :<|> listGenreH
  where
+  addActorH form = liftIO $ addActorToDB conn form
+  getActorH id = liftIO $ getActorFromDB conn id
+  listActorsH     = liftIO $ listActorsFromDB conn
   listCharactersH = liftIO $ listCharactersFromDB conn
   getCharacterH id = liftIO $ getCharacterFromDB conn id
-  addCharacterH form = liftIO $ addCharacterToDB conn form
+  addCharacterH form = liftIO $ addCharactersToDB conn form
   listCountriesH = liftIO $ listCountriesFromDB conn
   addWorkH form = liftIO $ addWorkToDB conn form
   listWorkH   = liftIO $ listWorkFromDB conn
@@ -77,7 +102,7 @@ cnmcSwagger =
     .~ "1.0"
     &  info
     .  description
-    ?~ "This is an API over all competent non male characters"
+    ?~ "An API over all competent non male characters"
     &  info
     .  license
     ?~ ("MIT" & url ?~ URL "http://mit.com")
