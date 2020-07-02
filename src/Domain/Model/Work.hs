@@ -6,6 +6,15 @@ import           Data.UUID
 import           GHC.Generics
 import           Data.Swagger                   ( ToSchema )
 
+
+data WorkForm = WorkForm
+  {
+    workFormName :: String,
+    workFormReleaseDate :: UTCTime,
+    workFormGenre :: Genre,
+    workFormMedium :: Medium
+  } deriving (Generic, Show, FromJSON, ToJSON, ToSchema)
+
 data Work = Work
   { workId :: UUID,
     name :: String,

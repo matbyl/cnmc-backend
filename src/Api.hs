@@ -28,6 +28,8 @@ type AddCharacter
 
 type ListCountries = "countries" :> Get '[JSON] [Country]
 
+type AddWork = "work" :> ReqBody '[JSON] WorkForm :> Post '[JSON] Work
+
 type ListWork = "work" :> Get '[JSON] [Work]
 
 type ListMedium = "medium" :> Get '[JSON] [Medium]
@@ -35,7 +37,7 @@ type ListMedium = "medium" :> Get '[JSON] [Medium]
 type ListGenre = "genre" :> Get '[JSON] [Genre]
 
 type CNMCAPI
-  = ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries :<|> ListWork :<|> ListMedium :<|> ListGenre
+  = ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries :<|> AddWork :<|> ListWork :<|> ListMedium :<|> ListGenre
 
 type SwaggerAPI = "swagger.json" :> Get '[JSON] Swagger
 
@@ -48,6 +50,7 @@ server conn =
     :<|> addCharacterH
     :<|> getCharacterH
     :<|> listCountriesH
+    :<|> addWorkH
     :<|> listWorkH
     :<|> listMediumH
     :<|> listGenreH
@@ -56,9 +59,10 @@ server conn =
   getCharacterH id = liftIO $ getCharacterFromDB conn id
   addCharacterH form = liftIO $ addCharacterToDB conn form
   listCountriesH = liftIO $ listCountriesFromDB conn
-  listWorkH      = liftIO $ listWorkFromDB conn
-  listMediumH    = liftIO $ listMediumFromDB conn
-  listGenreH     = liftIO $ listGenreFromDB conn
+  addWorkH form = liftIO $ addWorkToDB conn form
+  listWorkH   = liftIO $ listWorkFromDB conn
+  listMediumH = liftIO $ listMediumFromDB conn
+  listGenreH  = liftIO $ listGenreFromDB conn
 
 
 -- | Swagger spec for Todo API.

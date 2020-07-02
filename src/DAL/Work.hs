@@ -3,6 +3,7 @@
 
 module DAL.Work
   ( listWorkFromDB
+  , addWorkToDB
   )
 where
 
@@ -32,7 +33,7 @@ import           Opaleye.EnumMapper
 
 type WorkTable
   = Table
-      ( Column PGUuid
+      ( Maybe (Column PGUuid)
       , Column PGText
       , Column PGTimestamptz
       , Column PGGenre
@@ -49,7 +50,7 @@ workTable :: WorkTable
 workTable = Table
   "work"
   (p5
-    ( required "id"
+    ( optional "id"
     , required "name"
     , required "released"
     , required "genre"
@@ -59,6 +60,19 @@ workTable = Table
 
 work :: (UUID, String, UTCTime, Genre, Medium) -> Work
 work (id, name, released, genre, medium) = Work id name released genre medium
+
+addWorkToDB :: Connection -> WorkForm -> IO Work
+addWorkToDB conn (WorkForm name releaseDate genre medium) =
+  (work . head) <$> runInsert_
+    conn
+    (Insert workTable
+            [toFields (uuid, name, releaseDate, genre, medium)]
+            (rReturning id)
+            Nothing
+    )
+ where
+  uuid :: Maybe UUID
+  uuid = Nothing
 
 listWorkFromDB :: Connection -> IO [Work]
 listWorkFromDB conn = map work <$> (runQuery conn $ queryTable workTable)
