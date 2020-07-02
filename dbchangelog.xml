@@ -145,4 +145,16 @@
             </column>
         </createTable>
     </changeSet>
+
+
+    <changeSet id="57" author="mathias">
+        <dropColumn tableName="work">
+            <column name="released"></column>
+        </dropColumn>
+        <addColumn tableName="work">
+            <column name="released" type="TIMESTAMPTZ">
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

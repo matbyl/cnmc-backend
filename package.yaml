@@ -47,17 +47,19 @@ dependencies:
   - servant
   - servant-server
   - servant-client
+  - servant-swagger
+  - swagger2
   - time
   - text
   - wai
   - aeson
+  - aeson-pretty
   - warp
   - wai-logger
   - opaleye
   - postgresql-simple
+  - profunctors
   - product-profunctors
-  - polysemy
-  - polysemy-plugin
   - uuid
   - network-uri
   - hspec
@@ -69,6 +71,7 @@ dependencies:
   - http-client
   - http-client-tls
   - bytestring
+  - lens
 
 library:
   source-dirs: src

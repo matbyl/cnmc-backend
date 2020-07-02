@@ -3,7 +3,7 @@ module Api
   )
 where
 
-import DAL
+import           DAL
 import           Control.Monad.IO.Class
 import           Data.Aeson
 import           Data.Text
@@ -11,20 +11,15 @@ import           Data.Time                      ( UTCTime )
 import           Database.PostgreSQL.Simple
 import           Servant
 import           Servant.API
+import           Servant.Swagger                ( toSwagger )
 import           Data.UUID
 import           Data.Function                  ( (&) )
-import qualified Polysemy                      as P
-import           Polysemy                       ( Embed
-                                                , Member
-                                                , Members
-                                                , Sem
-                                                )
-import qualified Polysemy.Input                as PI
-import           Polysemy.Embed                 ( runEmbedded )
+import qualified Data.ByteString.Lazy.Char8    as BL8
+import           Domain.Model
+import           Data.Swagger
 
-
-import Domain.Model
-
+import           Control.Lens
+import           Data.Aeson.Encode.Pretty       ( encodePretty )
 
 type GetCharacter = "characters" :> Capture "id" UUID :> Get '[JSON] Character
 type ListCharacters = "characters" :> Get '[JSON] [Character]
@@ -33,26 +28,67 @@ type AddCharacter
 
 type ListCountries = "countries" :> Get '[JSON] [Country]
 
-type API = ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries
+type ListWork = "work" :> Get '[JSON] [Work]
+
+type ListMedium = "medium" :> Get '[JSON] [Medium]
+
+type ListGenre = "genre" :> Get '[JSON] [Genre]
+
+type CNMCAPI
+  = ListCharacters :<|> AddCharacter :<|> GetCharacter :<|> ListCountries :<|> ListWork :<|> ListMedium :<|> ListGenre
+
+type SwaggerAPI = "swagger.json" :> Get '[JSON] Swagger
+
+type API = SwaggerAPI :<|> CNMCAPI
 
 server :: Connection -> Server API
-server conn = listH :<|> addCharacterH :<|> getCharacterH :<|> listCountriesH
+server conn =
+  (return cnmcSwagger)
+    :<|> listCharactersH
+    :<|> addCharacterH
+    :<|> getCharacterH
+    :<|> listCountriesH
+    :<|> listWorkH
+    :<|> listMediumH
+    :<|> listGenreH
  where
-  listH = liftIO $ runAllEffects conn listCharacters
-  getCharacterH id = liftIO $ runAllEffects conn $ getCharacter id
-  addCharacterH form = liftIO $ runAllEffects conn $ addCharacter form
-  listCountriesH = liftIO $ runAllEffects conn $ listCountries 
+  listCharactersH = liftIO $ listCharactersFromDB conn
+  getCharacterH id = liftIO $ getCharacterFromDB conn id
+  addCharacterH form = liftIO $ addCharacterToDB conn form
+  listCountriesH = liftIO $ listCountriesFromDB conn
+  listWorkH      = liftIO $ listWorkFromDB conn
+  listMediumH    = liftIO $ listMediumFromDB conn
+  listGenreH     = liftIO $ listGenreFromDB conn
 
-characterAPI :: Proxy API
-characterAPI = Proxy
+
+-- | Swagger spec for Todo API.
+cnmcSwagger :: Swagger
+cnmcSwagger =
+  toSwagger cnmcAPI
+    &  info
+    .  title
+    .~ "CNMC API"
+    &  info
+    .  version
+    .~ "1.0"
+    &  info
+    .  description
+    ?~ "This is an API over all competent non male characters"
+    &  info
+    .  license
+    ?~ ("MIT" & url ?~ URL "http://mit.com")
+
+
+cnmcAPI :: Proxy CNMCAPI
+cnmcAPI = Proxy
+
+api :: Proxy API
+api = Proxy
 
 app :: Connection -> Application
-app = serve characterAPI . server
+app = serve api . server
 
-runAllEffects
-  :: Connection -> (forall  r . Member DAL r => Sem r a) -> IO a
-runAllEffects conn program =
-  program
-    & runDAL       -- [Input Connection, Embed IO]
-    & PI.runInputConst conn -- [Ember IO]
-    & P.runM
+-- | Output generated @swagger.json@ file for the @'TodoAPI'@.
+writeSwaggerJSON :: IO ()
+writeSwaggerJSON =
+  BL8.writeFile "example/swagger.json" (encodePretty cnmcSwagger)

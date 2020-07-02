@@ -1,18 +1,38 @@
 module Domain.Model.Work where
 
-import Data.Aeson
-import Data.Time
-import Data.UUID
-import GHC.Generics
+import           Data.Aeson
+import           Data.Time
+import           Data.UUID
+import           GHC.Generics
+import           Data.Swagger                   ( ToSchema )
 
-data Work = Work {
-        workId :: UUID
-        , name :: String
-        , released :: UTCTime
-        , genre :: Genre
-        , medium :: Medium
-    } deriving (Generic, Show, FromJSON)
+data Work = Work
+  { workId :: UUID,
+    name :: String,
+    released :: UTCTime,
+    genre :: Genre,
+    medium :: Medium
+  }
+  deriving (Generic, Show, FromJSON, ToJSON, ToSchema)
 
-data Genre = Action | Comedy | Horror deriving (Generic, Show, FromJSON)
+data Genre
+  = Comedy
+  | Action
+  | SciFi
+  | Superhero
+  | Crime
+  | Fantasy
+  | Animated
+  | Horror
+  | Thriller
+  | Supernatural
+  | Drama
+  | Dystopian
+  | Zombie
+  | Historic
+  deriving (Generic, Show, FromJSON, ToJSON,  ToSchema)
 
-data Medium = Medium | TvShow | Radio deriving (Generic, Show, FromJSON)
+data Medium
+  = Television
+  | Film
+  deriving (Generic, Show, FromJSON, ToJSON, ToSchema)

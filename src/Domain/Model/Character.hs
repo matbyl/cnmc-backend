@@ -1,9 +1,10 @@
 module Domain.Model.Character where
 
-import Data.Aeson
-import Data.Time
-import Data.UUID
-import GHC.Generics
+import           Data.Aeson
+import           Data.Time
+import           Data.UUID
+import           GHC.Generics
+import           Data.Swagger                   ( ToSchema )
 
 data CharacterForm = CharacterForm
   { characterFormFirstname :: String,
@@ -11,7 +12,7 @@ data CharacterForm = CharacterForm
     characterFormBirthday :: UTCTime,
     characterFormDescription :: String
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, ToSchema)
 
 instance FromJSON CharacterForm
 
@@ -22,6 +23,6 @@ data Character = Character
     characterLastname :: String,
     characterBirthday :: UTCTime
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, ToSchema)
 
 instance ToJSON Character

@@ -1,7 +1,7 @@
 
 {-# LANGUAGE Arrows #-}
 
-module DAL.Character where
+module DAL.Character (getCharacterFromDB, addCharacterToDB, listCharactersFromDB) where
 
 import Control.Arrow
 import Control.Monad
