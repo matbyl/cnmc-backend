@@ -48,7 +48,7 @@ mediumMapper = EnumMapper
 
 
 instance Default Constant Medium (Column PGMedium) where
-  def = constantEnum mediumMapper
+  def = constantEnum mediumMapper "medium"
 
 instance FromField Medium where
   fromField = fromFieldEnum mediumMapper

@@ -26,8 +26,10 @@ fromFieldEnum s2h f mdata = case mdata of
             returnError ConversionFailed f ("Unexpected enum value: " ++ str)
   Nothing -> returnError ConversionFailed f "Unexpected empty value"
 
-constantEnum :: EnumMapper a sqlType -> Constant a (Column sqlType)
-constantEnum h2s = dimap (haskellToEnum h2s) unsafeCoerceColumn def_
+constantEnum :: EnumMapper a sqlType -> String -> Constant a (Column sqlType)
+constantEnum h2s enumType = dimap (haskellToEnum h2s)
+                                  (unsafeCast enumType)
+                                  def_
  where
   def_ :: Constant String (Column PGText)
   def_ = def

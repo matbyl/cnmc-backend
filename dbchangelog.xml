@@ -170,4 +170,18 @@
         </dropColumn>
     </changeSet>
 
+    <changeSet id="60" author="mathias">
+        <createTable tableName="work_genre">
+            <column name="work_id" type="UUID">
+                <constraints nullable="false" references="work(id)" foreignKeyName="work_fkey" />
+            </column>
+            <column name="work_genre" type="genre" />
+        </createTable>
+    </changeSet>
+
+    <changeSet id="61" author="mathias">
+        <dropColumn tableName="work">
+            <column name="genre"></column>
+        </dropColumn>
+    </changeSet>
 </databaseChangeLog>

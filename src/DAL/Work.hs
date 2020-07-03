@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Arrows #-}
 
 module DAL.Work
   ( listWorkFromDB
@@ -33,6 +34,7 @@ import           GHC.Int                        ( Int64 )
 import           Opaleye                 hiding ( FromField )
 import           Opaleye.EnumMapper
 
+
 type WorkTable
   = Table
       ( Maybe (Column PGUuid)
@@ -50,35 +52,48 @@ workTable = Table
   (p4 (optional "id", required "name", required "released", required "medium"))
 
 workGenreTable :: WorkGenreTable
-workGenreTable = Table "workGenre" (p2 (required "workId", required "genre"))
+workGenreTable = Table "work_genre" (p2 (required "work_id", required "work_genre"))
 
 work :: [Genre] -> (UUID, String, UTCTime, Medium) -> Work
 work genres (id, name, released, medium) = Work id name released genres medium
 
 addWorkToDB :: Connection -> WorkForm -> IO Work
 addWorkToDB conn (WorkForm name releaseDate genres medium) = do
-  work       <- addWork
-  workGenres <- forM_ genres $ addWorkGenreToDB conn work
-  return work
+  (rawWork@(workId, _, _, _) :: (UUID, String, UTCTime, Medium)) <- addWork
+  workGenres <- forM genres $ addWorkGenreToDB conn $ workId
+  return $ work workGenres rawWork
  where
   uuid :: Maybe UUID
   uuid    = Nothing
-  addWork = (work [] . head) <$> runInsert_
+  addWork = head <$> runInsert_
     conn
     (Insert workTable
-            [toFields (uuid, name, releaseDate, medium)]
-            (rReturning (\res@(id, name, released, medium) -> res))
+            [toFields (uuid, name, releaseDate, Television )]
+            (rReturning id)
             Nothing
     )
 
-addWorkGenreToDB :: Connection -> Work -> Genre -> IO Genre
-addWorkGenreToDB conn (Work workId _ _ _ _) genre =
-  selectGenre . head <$> runInsert_
-    conn
-    (Insert workGenreTable [toFields (workId, genre)] (rReturning id) Nothing)
+addWorkGenreToDB :: Connection -> UUID -> Genre -> IO Genre
+addWorkGenreToDB conn workId genre = selectGenre . head <$> runInsert_
+  conn
+  (Insert workGenreTable [toFields (workId, genre)] (rReturning id) Nothing)
  where
   selectGenre :: (UUID, Genre) -> Genre
   selectGenre = snd
 
 listWorkFromDB :: Connection -> IO [Work]
-listWorkFromDB conn = map (work []) <$> (runQuery conn $ queryTable workTable)
+listWorkFromDB conn = (map (\(id, name, releaseDate, medium, genre) -> Work id name releaseDate [genre] medium)) <$> runQuery conn selectWork
+
+
+selectWork :: Select ( Column PGUuid
+      , Column PGText
+      , Column PGTimestamptz
+      , Column PGMedium
+      , Column PGGenre
+      )
+selectWork = proc () -> do
+      (workId', name, releaseDate, medium) <- queryTable workTable -< ()
+      (workId, workGenre) <- selectTable workGenreTable -< () 
+
+      restrict -< workId' .== workId
+      returnA -< (workId', name, releaseDate, medium, workGenre)

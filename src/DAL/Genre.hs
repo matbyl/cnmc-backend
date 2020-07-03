@@ -45,7 +45,7 @@ genreMapper = EnumMapper
   }
 
 instance Default Constant Genre (Column PGGenre) where
-  def = constantEnum genreMapper
+  def = constantEnum genreMapper "genre"
 
 instance FromField Genre where
   fromField = fromFieldEnum genreMapper
