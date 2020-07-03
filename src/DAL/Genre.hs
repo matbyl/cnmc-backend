@@ -40,8 +40,20 @@ genreMapper :: EnumMapper Genre PGGenre
 genreMapper = EnumMapper
   { enumToHaskell = genreEnumtoHaskell
   , haskellToEnum = \s -> case s of
-                      Action -> "action"
-                      Comedy -> "comedy"
+                      Action       -> "action"
+                      Comedy       -> "comedy"
+                      SciFi        -> "sci-fi"
+                      Superhero    -> "superhero"
+                      Crime        -> "crime"
+                      Fantasy      -> "fantasy"
+                      Animated     -> "animated"
+                      Horror       -> "horror"
+                      Thriller     -> "thriller"
+                      Supernatural -> "supernatural"
+                      Drama        -> "drama"
+                      Dystopian    -> "dystopian"
+                      Zombie       -> "zombie"
+                      Historic     -> "historic"
   }
 
 instance Default Constant Genre (Column PGGenre) where

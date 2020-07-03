@@ -46,7 +46,7 @@ type ListCountries = "countries" :> Get '[JSON] [Country]
 --
 -- Work
 --
-type AddWork = "work" :> ReqBody '[JSON] WorkForm :> Post '[JSON] Work
+type AddWork = "work" :> ReqBody '[JSON] [WorkForm] :> Post '[JSON] [Work]
 
 type ListWork = "work" :> Get '[JSON] [Work]
 
