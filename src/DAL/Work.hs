@@ -13,7 +13,9 @@ import           DAL.Genre
 import           DAL.Medium
 import           Data.Aeson
 import           Data.Coerce
-import           Data.Profunctor.Product        ( p5 )
+import           Data.Profunctor.Product        ( p4
+                                                , p2
+                                                )
 import           Data.Profunctor.Product.Default
 import           Data.Time
 import           Data.Typeable
@@ -36,43 +38,47 @@ type WorkTable
       ( Maybe (Column PGUuid)
       , Column PGText
       , Column PGTimestamptz
-      , Column PGGenre
       , Column PGMedium
       )
-      ( Column PGUuid
-      , Column PGText
-      , Column PGTimestamptz
-      , Column PGGenre
-      , Column PGMedium
-      )
+      (Column PGUuid, Column PGText, Column PGTimestamptz, Column PGMedium)
+type WorkGenreTable
+  = Table (Column PGUuid, Column PGGenre) (Column PGUuid, Column PGGenre)
 
 workTable :: WorkTable
 workTable = Table
   "work"
-  (p5
-    ( optional "id"
-    , required "name"
-    , required "released"
-    , required "genre"
-    , required "medium"
-    )
-  )
+  (p4 (optional "id", required "name", required "released", required "medium"))
 
-work :: (UUID, String, UTCTime, Genre, Medium) -> Work
-work (id, name, released, genre, medium) = Work id name released genre medium
+workGenreTable :: WorkGenreTable
+workGenreTable = Table "workGenre" (p2 (required "workId", required "genre"))
+
+work :: [Genre] -> (UUID, String, UTCTime, Medium) -> Work
+work genres (id, name, released, medium) = Work id name released genres medium
 
 addWorkToDB :: Connection -> WorkForm -> IO Work
-addWorkToDB conn (WorkForm name releaseDate genre medium) =
-  (work . head) <$> runInsert_
-    conn
-    (Insert workTable
-            [toFields (uuid, name, releaseDate, genre, medium)]
-            (rReturning id)
-            Nothing
-    )
+addWorkToDB conn (WorkForm name releaseDate genres medium) = do
+  work       <- addWork
+  workGenres <- forM_ genres $ addWorkGenreToDB conn work
+  return work
  where
   uuid :: Maybe UUID
-  uuid = Nothing
+  uuid    = Nothing
+  addWork = (work [] . head) <$> runInsert_
+    conn
+    (Insert workTable
+            [toFields (uuid, name, releaseDate, medium)]
+            (rReturning (\res@(id, name, released, medium) -> res))
+            Nothing
+    )
+
+addWorkGenreToDB :: Connection -> Work -> Genre -> IO Genre
+addWorkGenreToDB conn (Work workId _ _ _ _) genre =
+  selectGenre . head <$> runInsert_
+    conn
+    (Insert workGenreTable [toFields (workId, genre)] (rReturning id) Nothing)
+ where
+  selectGenre :: (UUID, Genre) -> Genre
+  selectGenre = snd
 
 listWorkFromDB :: Connection -> IO [Work]
-listWorkFromDB conn = map work <$> (runQuery conn $ queryTable workTable)
+listWorkFromDB conn = map (work []) <$> (runQuery conn $ queryTable workTable)

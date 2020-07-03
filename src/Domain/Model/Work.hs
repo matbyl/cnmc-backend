@@ -11,7 +11,7 @@ data WorkForm = WorkForm
   {
     workFormName :: String,
     workFormReleaseDate :: UTCTime,
-    workFormGenre :: Genre,
+    workFormGenre :: [Genre],
     workFormMedium :: Medium
   } deriving (Generic, Show, FromJSON, ToJSON, ToSchema)
 
@@ -19,7 +19,7 @@ data Work = Work
   { workId :: UUID,
     name :: String,
     released :: UTCTime,
-    genre :: Genre,
+    genre :: [Genre],
     medium :: Medium
   }
   deriving (Generic, Show, FromJSON, ToJSON, ToSchema)
